@@ -1,26 +1,290 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   Rutinas — Design System
+   Fuente: design-system/project/tokens/*.css
+   Los tokens del DS sobrescriben las variables de shadcn.
+   No agregar un sistema de estilos paralelo: si algo necesita
+   un color/radio/sombra, sale de acá.
+   Modo claro solamente. Los valores de dark viven en
+   design-system/project/tokens/colors.css cuando toque activarlo.
+   ============================================================ */
+
+/* ---------- Paleta base (escalas crudas del DS) ---------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Emerald de marca */
+  --green-50: #ecf6f1;
+  --green-100: #d2ebdf;
+  --green-200: #a6d8c0;
+  --green-300: #6fbe9c;
+  --green-400: #3b9e77;
+  --green-500: #1f855c;
+  --green-600: #16714c; /* accent */
+  --green-700: #105b3d;
+  --green-800: #0c4630;
+  --green-900: #083322;
+
+  /* Neutros — grafito cálido */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafaf9;
+  --neutral-100: #f4f3f1;
+  --neutral-200: #e8e6e2;
+  --neutral-300: #d6d3cd;
+  --neutral-400: #a8a49c;
+  --neutral-500: #78746b;
+  --neutral-600: #575349;
+  --neutral-700: #3e3a32;
+  --neutral-800: #2a2721;
+  --neutral-900: #1c1a15;
+  --neutral-950: #12100c;
+
+  /* Semánticos base — apagados, nunca vívidos */
+  --amber-400: #e0a94a;
+  --amber-500: #c6892b;
+  --amber-600: #9c6a1e;
+  --red-400: #d98a82;
+  --red-500: #c0524a;
+  --red-600: #9e3a33;
+  --blue-400: #7ea3c4;
+  --blue-500: #3c6e9e;
+  --blue-600: #2c5580;
+  --violet-500: #6b5e8c;
+}
+
+/* ---------- Variables de shadcn mapeadas a tokens del DS ---------- */
+:root {
+  --background: var(--neutral-50); /* DS --bg-app */
+  --foreground: var(--neutral-900); /* DS --text-strong */
+
+  --card: var(--neutral-0); /* DS --surface-card */
+  --card-foreground: var(--neutral-900);
+  --popover: var(--neutral-0); /* DS --surface-raised */
+  --popover-foreground: var(--neutral-900);
+
+  --primary: var(--green-600); /* DS --accent */
+  --primary-foreground: #ffffff; /* DS --text-on-accent */
+
+  --secondary: var(--neutral-100);
+  --secondary-foreground: var(--neutral-900);
+
+  --muted: var(--neutral-100); /* DS --surface-sunken / --bg-canvas */
+  --muted-foreground: var(--neutral-500); /* DS --text-muted */
+
+  /* OJO: --accent de shadcn es la superficie de hover, NO el accent del DS.
+     El accent de marca del DS es --primary. */
+  --accent: var(--neutral-100);
+  --accent-foreground: var(--neutral-900);
+
+  --destructive: var(--red-500); /* DS --danger */
+  --destructive-foreground: #ffffff;
+
+  --border: var(--neutral-200); /* DS --border-subtle */
+  --input: var(--neutral-300); /* DS --border-default */
+  --ring: var(--green-600);
+
+  --radius: 1rem; /* DS --radius-lg, base de la escala */
+
+  /* Series de datos del DS: emerald, ámbar, azul, violeta, rojo */
+  --chart-1: var(--green-600);
+  --chart-2: var(--amber-500);
+  --chart-3: var(--blue-500);
+  --chart-4: var(--violet-500);
+  --chart-5: var(--red-500);
+
+  --sidebar: var(--neutral-0);
+  --sidebar-foreground: var(--neutral-900);
+  --sidebar-primary: var(--green-600);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--neutral-100);
+  --sidebar-accent-foreground: var(--neutral-900);
+  --sidebar-border: var(--neutral-200);
+  --sidebar-ring: var(--green-600);
+}
+
+/* ---------- Tokens del DS que shadcn no tiene ---------- */
+:root {
+  /* Superficies y texto: shadcn tiene 2 niveles de texto, el DS tiene 4 */
+  --canvas: var(--neutral-100); /* DS --bg-canvas */
+  --body: var(--neutral-600); /* DS --text-body */
+  --faint: var(--neutral-400); /* DS --text-faint */
+  --border-strong: var(--neutral-400); /* DS --border-strong */
+
+  /* Accent suave (fallback de avatar, badges de marca) */
+  --accent-soft: var(--green-50);
+  --accent-soft-strong: var(--green-700);
+
+  /* Semánticos: <n> sólido, <n>-soft fondo tintado, <n>-strong texto sobre el tintado */
+  --success: var(--green-600);
+  --success-soft: var(--green-50);
+  --success-strong: var(--green-700);
+  --warning: var(--amber-500);
+  --warning-soft: #f7efdd;
+  --warning-strong: var(--amber-600);
+  --destructive-soft: #f7e8e6;
+  --destructive-strong: var(--red-600);
+  --info: var(--blue-500);
+  --info-soft: #e8eef5;
+  --info-strong: var(--blue-600);
+
+  /* Gamificación contenida: récord personal y racha comparten el ámbar */
+  --pr: var(--amber-500);
+  --pr-soft: #f7efdd;
+  --streak: var(--amber-500);
+
+  /* Layout */
+  --container-max: 1240px;
+  --mobile-w: 390px;
+
+  /* Motion — sin namespace en Tailwind, se usan como duration-[var(--dur-base)] */
+  --dur-fast: 150ms;
+  --dur-base: 240ms;
+  --dur-slow: 400ms;
 }
 
 @theme inline {
+  /* ---- Tipografía ---- */
+  --font-sans: var(--font-manrope), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* Escala del DS. sm/base quedan como Tailwind (14/16); el resto se pisa. */
+  --text-2xs: 0.6875rem; /* 11 */
+  --text-2xs--line-height: 1.4;
+  --text-md: 1rem; /* 16 — alias del DS para text-base */
+  --text-md--line-height: 1.55;
+  --text-xl: 1.375rem; /* 22 */
+  --text-xl--line-height: 1.22;
+  --text-2xl: 1.75rem; /* 28 */
+  --text-2xl--line-height: 1.22;
+  --text-3xl: 2.25rem; /* 36 */
+  --text-3xl--line-height: 1.08;
+  --text-4xl: 3rem; /* 48 */
+  --text-4xl--line-height: 1.08;
+  --text-5xl: 4rem; /* 64 */
+  --text-5xl--line-height: 1.08;
+  --text-6xl: 5.5rem; /* 88 — números hero */
+  --text-6xl--line-height: 1.08;
+
+  --leading-tight: 1.08;
+  --leading-snug: 1.22;
+  --leading-normal: 1.55;
+  --leading-relaxed: 1.7;
+
+  --tracking-display: -0.025em;
+  --tracking-tight: -0.012em;
+  --tracking-label: 0.02em;
+  --tracking-caps: 0.14em; /* eyebrows / headers de tabla en caps */
+
+  /* ---- Radios (escala literal del DS, no derivada de --radius) ---- */
+  --radius-xs: 5px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 30px;
+
+  /* ---- Sombras — difusas, cálidas, poca profundidad ---- */
+  --shadow-xs: 0 1px 2px rgba(28, 26, 21, 0.04);
+  --shadow-sm: 0 1px 2px rgba(28, 26, 21, 0.05), 0 2px 6px rgba(28, 26, 21, 0.04);
+  --shadow-md: 0 2px 6px rgba(28, 26, 21, 0.05), 0 8px 20px rgba(28, 26, 21, 0.06);
+  --shadow-lg: 0 4px 12px rgba(28, 26, 21, 0.06), 0 18px 40px rgba(28, 26, 21, 0.09);
+  --shadow-xl: 0 30px 70px rgba(28, 26, 21, 0.14);
+  --shadow-accent: 0 6px 20px color-mix(in srgb, var(--green-600) 22%, transparent);
+  --inset-shadow-xs: inset 0 1px 2px rgba(28, 26, 21, 0.05);
+
+  /* ---- Easings ---- */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.2, 0.5, 1);
+
+  /* ---- Layout ---- */
+  --spacing-sidebar: 264px;
+  --spacing-topbar: 64px;
+  --container-app: var(--container-max);
+  --container-mobile: var(--mobile-w);
+
+  /* ---- Colores extra del DS ---- */
+  --color-canvas: var(--canvas);
+  --color-body: var(--body);
+  --color-faint: var(--faint);
+  --color-border-strong: var(--border-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-strong: var(--accent-soft-strong);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-strong: var(--success-strong);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-strong: var(--warning-strong);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-destructive-strong: var(--destructive-strong);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-strong: var(--info-strong);
+  --color-pr: var(--pr);
+  --color-pr-soft: var(--pr-soft);
+  --color-streak: var(--streak);
+
+  /* ---- shadcn ---- */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  /* Datos tabulares: pesos, reps, timers, 1RM */
+  .font-mono,
+  code,
+  kbd,
+  samp {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Eyebrow / kicker: el único tratamiento en caps del sistema */
+@utility eyebrow {
+  @apply text-xs font-semibold tracking-caps text-muted-foreground uppercase;
 }
