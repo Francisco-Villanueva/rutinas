@@ -1,0 +1,362 @@
+// Las connection strings NO van acá: desde Prisma 7 el bloque datasource
+// no acepta `url` ni `directUrl`. Viven en prisma.config.ts:
+//   - CLI (db pull / migrate / seed) -> DIRECT_URL  (conexión directa a Neon)
+//   - runtime de la app              -> DATABASE_URL (pooled) vía adapter en lib/db.ts
+//
+// Modelos en PascalCase singular con @@map a la tabla real; campos en camelCase
+// con @map a la columna real. La base no cambió. `prisma db pull` conserva estos
+// renombres (verificado), pero borra este comentario: si lo corrés, reponelo.
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["partialIndexes"]
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Gimnasio {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre        String
+  direccion     String?
+  telefono      String?
+  email         String?
+  activo        Boolean     @default(true)
+  creadoEn      DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime    @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  ejercicios    Ejercicio[]
+  usuarios      Usuario[]
+
+  @@map("gimnasios")
+}
+
+model Usuario {
+  id                       String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gimnasioId               String?               @map("gimnasio_id") @db.Uuid
+  clerkUserId              String                @unique @map("clerk_user_id")
+  email                    String                @unique
+  nombre                   String
+  apellido                 String?
+  rol                      rol_usuario
+  fechaNacimiento          DateTime?             @map("fecha_nacimiento") @db.Date
+  telefono                 String?
+  avatarUrl                String?               @map("avatar_url")
+  activo                   Boolean               @default(true)
+  creadoEn                 DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn            DateTime              @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  asignacionesComoAlumno   AsignacionRutina[]    @relation("AsignacionAlumno")
+  asignacionesComoProfesor AsignacionRutina[]    @relation("AsignacionProfesor")
+  mediaSubida              EjercicioMedia[]
+  ejerciciosCreados        Ejercicio[]
+  fotosProgreso            FotoProgreso[]
+  vinculosComoAlumno       ProfesorAlumno[]      @relation("ProfesorAlumnoAlumno")
+  vinculosComoProfesor     ProfesorAlumno[]      @relation("ProfesorAlumnoProfesor")
+  recordsPersonales        RecordPersonal[]
+  registrosMetricas        RegistroMetrica[]
+  rutinas                  Rutina[]
+  sesiones                 SesionEntrenamiento[]
+  gimnasio                 Gimnasio?             @relation(fields: [gimnasioId], references: [id], onUpdate: NoAction)
+
+  @@index([gimnasioId], map: "idx_usuarios_gimnasio")
+  @@index([rol], map: "idx_usuarios_rol")
+  @@map("usuarios")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ProfesorAlumno {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesorId  String    @map("profesor_id") @db.Uuid
+  alumnoId    String    @map("alumno_id") @db.Uuid
+  fechaInicio DateTime  @default(dbgenerated("CURRENT_DATE")) @map("fecha_inicio") @db.Date
+  fechaFin    DateTime? @map("fecha_fin") @db.Date
+  activo      Boolean   @default(true)
+  creadoEn    DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  alumno      Usuario   @relation("ProfesorAlumnoAlumno", fields: [alumnoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profesor    Usuario   @relation("ProfesorAlumnoProfesor", fields: [profesorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([profesorId, alumnoId], map: "uq_profesor_alumno")
+  @@index([alumnoId], map: "idx_prof_alumno_alumno")
+  @@index([profesorId], map: "idx_prof_alumno_profesor")
+  @@map("profesor_alumno")
+}
+
+model Ejercicio {
+  id                      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gimnasioId              String?             @map("gimnasio_id") @db.Uuid
+  creadoPor               String?             @map("creado_por") @db.Uuid
+  nombre                  String
+  descripcion             String?
+  grupoMuscular           String              @map("grupo_muscular")
+  grupoMuscularSecundario String?             @map("grupo_muscular_secundario")
+  equipamiento            String?
+  instrucciones           String?
+  esPublico               Boolean             @default(false) @map("es_publico")
+  activo                  Boolean             @default(true)
+  creadoEn                DateTime            @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn           DateTime            @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  media                   EjercicioMedia[]
+  creador                 Usuario?            @relation(fields: [creadoPor], references: [id], onUpdate: NoAction)
+  gimnasio                Gimnasio?           @relation(fields: [gimnasioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  recordsPersonales       RecordPersonal[]
+  registros               RegistroEjercicio[]
+  rutinaEjercicios        RutinaEjercicio[]
+
+  @@unique([gimnasioId, nombre], map: "uq_ejercicio_nombre_gimnasio")
+  @@index([gimnasioId], map: "idx_ejercicios_gimnasio")
+  @@index([grupoMuscular], map: "idx_ejercicios_grupo_muscular")
+  @@map("ejercicios")
+}
+
+model EjercicioMedia {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejercicioId      String     @map("ejercicio_id") @db.Uuid
+  tipo             tipo_media
+  url              String
+  thumbnailUrl     String?    @map("thumbnail_url")
+  nombreArchivo    String?    @map("nombre_archivo")
+  tamanoBytes      BigInt?    @map("tamano_bytes")
+  duracionSegundos Int?       @map("duracion_segundos")
+  orden            Int        @default(0)
+  subidoPor        String?    @map("subido_por") @db.Uuid
+  creadoEn         DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+  ejercicio        Ejercicio  @relation(fields: [ejercicioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  autor            Usuario?   @relation(fields: [subidoPor], references: [id], onUpdate: NoAction)
+
+  @@index([ejercicioId, orden], map: "idx_ejercicio_media_ejercicio")
+  @@map("ejercicio_media")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Rutina {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesorId      String             @map("profesor_id") @db.Uuid
+  nombre          String
+  descripcion     String?
+  objetivo        String?
+  duracionSemanas Int?               @map("duracion_semanas")
+  diasPorSemana   Int?               @map("dias_por_semana")
+  esPlantilla     Boolean            @default(false) @map("es_plantilla")
+  activo          Boolean            @default(true)
+  creadoEn        DateTime           @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn   DateTime           @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  asignaciones    AsignacionRutina[]
+  dias            RutinaDia[]
+  profesor        Usuario            @relation(fields: [profesorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([esPlantilla], map: "idx_rutinas_plantilla", where: raw("(es_plantilla = true)"))
+  @@index([profesorId], map: "idx_rutinas_profesor")
+  @@map("rutinas")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model RutinaDia {
+  id         String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rutinaId   String                @map("rutina_id") @db.Uuid
+  numeroDia  Int                   @map("numero_dia")
+  nombre     String
+  notas      String?
+  creadoEn   DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
+  rutina     Rutina                @relation(fields: [rutinaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ejercicios RutinaEjercicio[]
+  sesiones   SesionEntrenamiento[]
+
+  @@unique([rutinaId, numeroDia], map: "uq_rutina_dia")
+  @@index([rutinaId], map: "idx_rutina_dias_rutina")
+  @@map("rutina_dias")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model RutinaEjercicio {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rutinaDiaId      String              @map("rutina_dia_id") @db.Uuid
+  ejercicioId      String              @map("ejercicio_id") @db.Uuid
+  orden            Int                 @default(0)
+  series           Int
+  repeticionesMin  Int?                @map("repeticiones_min")
+  repeticionesMax  Int?                @map("repeticiones_max")
+  pesoSugerido     Decimal?            @map("peso_sugerido") @db.Decimal(6, 2)
+  descansoSegundos Int?                @map("descanso_segundos")
+  tempo            String?
+  notas            String?
+  creadoEn         DateTime            @default(now()) @map("creado_en") @db.Timestamptz(6)
+  registros        RegistroEjercicio[]
+  ejercicio        Ejercicio           @relation(fields: [ejercicioId], references: [id], onUpdate: NoAction)
+  rutinaDia        RutinaDia           @relation(fields: [rutinaDiaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([rutinaDiaId, orden], map: "idx_rutina_ejercicios_dia")
+  @@index([ejercicioId], map: "idx_rutina_ejercicios_ejercicio")
+  @@map("rutina_ejercicios")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model AsignacionRutina {
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rutinaId    String                @map("rutina_id") @db.Uuid
+  alumnoId    String                @map("alumno_id") @db.Uuid
+  profesorId  String                @map("profesor_id") @db.Uuid
+  fechaInicio DateTime              @default(dbgenerated("CURRENT_DATE")) @map("fecha_inicio") @db.Date
+  fechaFin    DateTime?             @map("fecha_fin") @db.Date
+  estado      estado_asignacion     @default(activa)
+  notas       String?
+  creadoEn    DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
+  alumno      Usuario               @relation("AsignacionAlumno", fields: [alumnoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profesor    Usuario               @relation("AsignacionProfesor", fields: [profesorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  rutina      Rutina                @relation(fields: [rutinaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sesiones    SesionEntrenamiento[]
+
+  @@index([alumnoId, estado], map: "idx_asignaciones_alumno")
+  @@index([rutinaId], map: "idx_asignaciones_rutina")
+  @@map("asignaciones_rutina")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model SesionEntrenamiento {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alumnoId        String              @map("alumno_id") @db.Uuid
+  asignacionId    String?             @map("asignacion_id") @db.Uuid
+  rutinaDiaId     String?             @map("rutina_dia_id") @db.Uuid
+  fecha           DateTime            @default(dbgenerated("CURRENT_DATE")) @db.Date
+  estado          estado_sesion       @default(planificada)
+  duracionMinutos Int?                @map("duracion_minutos")
+  rpeGeneral      Int?                @map("rpe_general") @db.SmallInt
+  notas           String?
+  creadoEn        DateTime            @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn   DateTime            @default(now()) @map("actualizado_en") @db.Timestamptz(6)
+  registros       RegistroEjercicio[]
+  alumno          Usuario             @relation(fields: [alumnoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  asignacion      AsignacionRutina?   @relation(fields: [asignacionId], references: [id], onUpdate: NoAction)
+  rutinaDia       RutinaDia?          @relation(fields: [rutinaDiaId], references: [id], onUpdate: NoAction)
+
+  @@index([alumnoId, fecha(sort: Desc)], map: "idx_sesiones_alumno_fecha")
+  @@index([estado], map: "idx_sesiones_estado")
+  @@map("sesiones_entrenamiento")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model RegistroEjercicio {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sesionId          String              @map("sesion_id") @db.Uuid
+  ejercicioId       String              @map("ejercicio_id") @db.Uuid
+  rutinaEjercicioId String?             @map("rutina_ejercicio_id") @db.Uuid
+  numeroSerie       Int                 @map("numero_serie")
+  repeticiones      Int?
+  peso              Decimal?            @db.Decimal(6, 2)
+  rpe               Int?                @db.SmallInt
+  completado        Boolean             @default(true)
+  notas             String?
+  creadoEn          DateTime            @default(now()) @map("creado_en") @db.Timestamptz(6)
+  recordsPersonales RecordPersonal[]
+  ejercicio         Ejercicio           @relation(fields: [ejercicioId], references: [id], onUpdate: NoAction)
+  rutinaEjercicio   RutinaEjercicio?    @relation(fields: [rutinaEjercicioId], references: [id], onUpdate: NoAction)
+  sesion            SesionEntrenamiento @relation(fields: [sesionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([sesionId, ejercicioId, numeroSerie], map: "uq_registro_serie")
+  @@index([ejercicioId], map: "idx_registros_ejercicio")
+  @@index([sesionId], map: "idx_registros_sesion")
+  @@map("registros_ejercicio")
+}
+
+model TipoMetrica {
+  id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codigo    String            @unique
+  nombre    String
+  unidad    String?
+  tipoDato  tipo_dato_metrica @default(numero) @map("tipo_dato")
+  orden     Int               @default(0)
+  activo    Boolean           @default(true)
+  creadoEn  DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  registros RegistroMetrica[]
+
+  @@map("tipos_metrica")
+}
+
+model RegistroMetrica {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alumnoId      String      @map("alumno_id") @db.Uuid
+  tipoMetricaId String      @map("tipo_metrica_id") @db.Uuid
+  valor         Decimal     @db.Decimal(8, 2)
+  fecha         DateTime    @default(dbgenerated("CURRENT_DATE")) @db.Date
+  notas         String?
+  creadoEn      DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  alumno        Usuario     @relation(fields: [alumnoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tipoMetrica   TipoMetrica @relation(fields: [tipoMetricaId], references: [id], onUpdate: NoAction)
+
+  @@unique([alumnoId, tipoMetricaId, fecha], map: "uq_metrica_alumno_fecha")
+  @@index([alumnoId, fecha(sort: Desc)], map: "idx_metricas_alumno_fecha")
+  @@map("registros_metricas")
+}
+
+model FotoProgreso {
+  id       String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alumnoId String      @map("alumno_id") @db.Uuid
+  url      String
+  angulo   angulo_foto @default(frente)
+  fecha    DateTime    @default(dbgenerated("CURRENT_DATE")) @db.Date
+  notas    String?
+  creadoEn DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  alumno   Usuario     @relation(fields: [alumnoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([alumnoId, fecha(sort: Desc)], map: "idx_fotos_alumno_fecha")
+  @@map("fotos_progreso")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model RecordPersonal {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  alumnoId            String             @map("alumno_id") @db.Uuid
+  ejercicioId         String             @map("ejercicio_id") @db.Uuid
+  registroEjercicioId String?            @map("registro_ejercicio_id") @db.Uuid
+  peso                Decimal            @db.Decimal(6, 2)
+  repeticiones        Int
+  rmEstimado          Decimal?           @map("rm_estimado") @db.Decimal(6, 2)
+  fecha               DateTime           @default(dbgenerated("CURRENT_DATE")) @db.Date
+  creadoEn            DateTime           @default(now()) @map("creado_en") @db.Timestamptz(6)
+  alumno              Usuario            @relation(fields: [alumnoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ejercicio           Ejercicio          @relation(fields: [ejercicioId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  registroEjercicio   RegistroEjercicio? @relation(fields: [registroEjercicioId], references: [id], onUpdate: NoAction)
+
+  @@unique([alumnoId, ejercicioId, repeticiones], map: "uq_pr_alumno_ejercicio_reps")
+  @@index([alumnoId], map: "idx_prs_alumno")
+  @@index([alumnoId, ejercicioId], map: "idx_prs_ejercicio")
+  @@map("records_personales")
+}
+
+enum angulo_foto {
+  frente
+  perfil
+  espalda
+  otro
+}
+
+enum estado_asignacion {
+  activa
+  completada
+  cancelada
+}
+
+enum estado_sesion {
+  planificada
+  completada
+  omitida
+}
+
+enum rol_usuario {
+  profesor
+  alumno
+  admin
+}
+
+enum tipo_dato_metrica {
+  numero
+  porcentaje
+  texto
+}
+
+enum tipo_media {
+  video
+  gif
+  imagen
+}
