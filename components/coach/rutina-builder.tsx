@@ -47,11 +47,7 @@ const COLUMNAS = "grid-cols-[2fr_70px_70px_90px_80px_70px_112px]"
 /**
  * Constructor de rutinas.
  *
- * El día activo es estado local; todo lo demás son Server Actions. Con el
- * dataset de ejemplo (`rutina.esDemo`) los controles de edición se deshabilitan:
- * esos ids no existen en la base y cualquier action fallaría. Lo único que queda
- * habilitado es crear una rutina de verdad, que es justamente cómo se sale del
- * modo demo.
+ * El día activo es estado local; todo lo demás son Server Actions.
  */
 function RutinaBuilder({
   rutina,
@@ -68,7 +64,6 @@ function RutinaBuilder({
   // Al cambiar de rutina (o al borrar el día abierto) el id guardado deja de
   // existir: se cae al primer día en vez de mostrar la tabla vacía.
   const dia = rutina.dias.find((d) => d.id === diaId) ?? rutina.dias[0]
-  const editable = !rutina.esDemo
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[1fr_280px] lg:gap-6">
@@ -100,7 +95,7 @@ function RutinaBuilder({
 
             <div className="flex shrink-0 flex-wrap gap-2">
               <RutinaDialog rutina={rutina}>
-                <Button variant="ghost" size="sm" disabled={!editable}>
+                <Button variant="ghost" size="sm">
                   <Pencil aria-hidden />
                   Editar
                 </Button>
@@ -110,25 +105,17 @@ function RutinaBuilder({
                 campos={{ id: rutina.id }}
                 variant="ghost"
                 size="sm"
-                disabled={!editable}
               >
                 <Copy aria-hidden />
                 Duplicar
               </AccionSimple>
-              {editable ? (
-                <Button size="sm" asChild>
-                  <Link href={`/asignaciones?rutina=${rutina.id}`}>
-                    <Send aria-hidden />
-                    <span className="hidden sm:inline">Asignar a alumnos</span>
-                    <span className="sm:hidden">Asignar</span>
-                  </Link>
-                </Button>
-              ) : (
-                <Button size="sm" disabled>
+              <Button size="sm" asChild>
+                <Link href={`/asignaciones?rutina=${rutina.id}`}>
                   <Send aria-hidden />
-                  Asignar
-                </Button>
-              )}
+                  <span className="hidden sm:inline">Asignar a alumnos</span>
+                  <span className="sm:hidden">Asignar</span>
+                </Link>
+              </Button>
             </div>
           </CardContent>
 
@@ -137,14 +124,10 @@ function RutinaBuilder({
           <CardContent className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
             <SelectNativo
               aria-label="Rutina a editar"
-              value={rutinas.some((r) => r.id === rutina.id) ? rutina.id : ""}
+              value={rutina.id}
               onChange={(e) => router.push(`/rutinas?rutina=${e.target.value}`)}
-              disabled={rutinas.length === 0}
               className="sm:max-w-xs"
             >
-              {rutinas.length === 0 ? (
-                <option value="">Datos de ejemplo</option>
-              ) : null}
               {rutinas.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.nombre}
@@ -167,7 +150,6 @@ function RutinaBuilder({
                 confirmar={`¿Archivar "${rutina.nombre}"? Deja de aparecer en el constructor y en las plantillas. El historial de los alumnos no se toca.`}
                 variant="ghost"
                 size="sm"
-                disabled={!editable}
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 aria-hidden />
@@ -208,7 +190,6 @@ function RutinaBuilder({
               <DiaDialog rutinaId={rutina.id}>
                 <button
                   type="button"
-                  disabled={!editable}
                   className="flex min-w-23 shrink-0 flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-border p-3 text-muted-foreground transition-colors duration-[var(--dur-fast)] hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 lg:flex-1"
                 >
                   <Plus aria-hidden className="size-5" />
@@ -223,7 +204,6 @@ function RutinaBuilder({
           <TablaDelDia
             dia={dia}
             ejercicios={ejercicios}
-            editable={editable}
             esUnicoDia={rutina.dias.length === 1}
           />
         ) : (
@@ -236,7 +216,7 @@ function RutinaBuilder({
         )}
       </div>
 
-      <PanelLateral rutina={rutina} editable={editable} />
+      <PanelLateral rutina={rutina} />
     </div>
   )
 }
@@ -244,12 +224,10 @@ function RutinaBuilder({
 function TablaDelDia({
   dia,
   ejercicios,
-  editable,
   esUnicoDia,
 }: {
   dia: DiaRutina
   ejercicios: OpcionEjercicio[]
-  editable: boolean
   esUnicoDia: boolean
 }) {
   return (
@@ -265,7 +243,7 @@ function TablaDelDia({
         </div>
         <div className="flex shrink-0 gap-1">
           <DiaDialog dia={dia}>
-            <Button variant="ghost" size="sm" disabled={!editable}>
+            <Button variant="ghost" size="sm">
               <Pencil aria-hidden />
               Editar día
             </Button>
@@ -277,7 +255,7 @@ function TablaDelDia({
             variant="ghost"
             size="icon-sm"
             aria-label="Eliminar día"
-            disabled={!editable || esUnicoDia}
+            disabled={esUnicoDia}
             title={
               esUnicoDia ? "Una rutina necesita al menos un día" : "Eliminar día"
             }
@@ -314,8 +292,7 @@ function TablaDelDia({
               key={ex.id}
               ejercicio={ex}
               ejercicios={ejercicios}
-              editable={editable}
-              esPrimero={i === 0}
+                esPrimero={i === 0}
               esUltimo={i === dia.ejercicios.length - 1}
             />
           ))}
@@ -324,7 +301,7 @@ function TablaDelDia({
 
       <div className="px-4 py-3 lg:px-5">
         <EjercicioDeDiaDialog rutinaDiaId={dia.id} ejercicios={ejercicios}>
-          <Button variant="ghost" size="sm" disabled={!editable}>
+          <Button variant="ghost" size="sm">
             <Plus aria-hidden />
             Agregar ejercicio
           </Button>
@@ -337,13 +314,11 @@ function TablaDelDia({
 function FilaEjercicio({
   ejercicio: ex,
   ejercicios,
-  editable,
   esPrimero,
   esUltimo,
 }: {
   ejercicio: EjercicioDeDia
   ejercicios: OpcionEjercicio[]
-  editable: boolean
   esPrimero: boolean
   esUltimo: boolean
 }) {
@@ -357,7 +332,7 @@ function FilaEjercicio({
         variant="ghost"
         size="icon-sm"
         aria-label={`Subir ${ex.nombre}`}
-        disabled={!editable || esPrimero}
+        disabled={esPrimero}
         silenciarExito
       >
         <ArrowUp aria-hidden />
@@ -368,7 +343,7 @@ function FilaEjercicio({
         variant="ghost"
         size="icon-sm"
         aria-label={`Bajar ${ex.nombre}`}
-        disabled={!editable || esUltimo}
+        disabled={esUltimo}
         silenciarExito
       >
         <ArrowDown aria-hidden />
@@ -378,7 +353,6 @@ function FilaEjercicio({
           variant="ghost"
           size="icon-sm"
           aria-label={`Editar ${ex.nombre}`}
-          disabled={!editable}
         >
           <Pencil aria-hidden />
         </Button>
@@ -390,7 +364,6 @@ function FilaEjercicio({
         variant="ghost"
         size="icon-sm"
         aria-label={`Quitar ${ex.nombre}`}
-        disabled={!editable}
         className="text-destructive hover:bg-destructive/10 hover:text-destructive"
       >
         <Trash2 aria-hidden />
@@ -450,7 +423,7 @@ function FilaEjercicio({
   )
 }
 
-function PanelLateral({ rutina, editable }: { rutina: Rutina; editable: boolean }) {
+function PanelLateral({ rutina }: { rutina: Rutina }) {
   return (
     <div className="flex flex-col gap-4 lg:sticky lg:top-[calc(var(--spacing-topbar)+var(--spacing)*8)]">
       <Card>
@@ -486,7 +459,6 @@ function PanelLateral({ rutina, editable }: { rutina: Rutina; editable: boolean 
                     variant="ghost"
                     size="icon-sm"
                     aria-label={`Duplicar ${t.nombre}`}
-                    disabled={!editable}
                   >
                     <Copy aria-hidden />
                   </AccionSimple>

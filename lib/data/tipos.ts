@@ -1,10 +1,10 @@
 // ============================================================================
 // Tipos de lectura del lado del profesor.
 //
-// Viven separados de las queries porque los mocks de lib/mock/ también los usan
-// y esos módulos no pueden importar nada marcado con "server-only".
+// Viven separados de las queries porque los componentes cliente los importan y
+// no pueden tocar nada marcado con "server-only".
 //
-// Convención: lo que todavía no tiene query es `null`, y la UI lo muestra como
+// Convención: lo que no se puede calcular es `null`, y la UI lo muestra como
 // "—" o "Sin datos". No inventar números: un valor plausible pero falso en un
 // panel de entrenador es peor que un guión.
 // ============================================================================
@@ -21,7 +21,8 @@ export type AlumnoPanel = {
   estado: EstadoAlumno;
   /** Texto listo para mostrar: "Hoy", "hace 3 días". null si nunca entrenó. */
   ultimaSesion: string | null;
-  /** 0-100. null mientras no exista la query de adherencia. */
+  /** 0-100. null si la rutina no declara días por semana: sin eso no hay
+   * denominador contra el cual medir. */
   adherencia: number | null;
   racha: number | null;
   alerta: { texto: string; tono: TonoAlerta } | null;
@@ -45,9 +46,8 @@ export type EventoActividad = {
 export type PanelProfesor = {
   alumnos: AlumnoPanel[];
   actividad: EventoActividad[];
-  /** null mientras no exista la query sobre records_personales. */
-  prsSemana: number | null;
-  esDemo: boolean;
+  /** PRs conseguidos por sus alumnos desde el lunes. */
+  prsSemana: number;
 };
 
 export type SesionHistorial = {
@@ -73,15 +73,17 @@ export type DatosAlumno = {
 
 export type AlumnoDetalle = {
   alumno: AlumnoPanel;
-  /** null en el dataset de ejemplo: no hay fila real que editar. */
-  datos: DatosAlumno | null;
-  /** 1RM por ejercicio + adherencia. Vacío mientras no exista la query. */
+  datos: DatosAlumno;
+  /** 1RM por ejercicio + adherencia. Vacío hasta que consiga su primer PR. */
   marcas: { label: string; value: string; unit?: string; delta?: string }[];
-  /** Serie de 1RM estimado del ejercicio principal, para el gráfico de línea. */
+  /**
+   * Serie de 1RM estimado del ejercicio principal, para el gráfico de línea.
+   * null con menos de dos semanas de datos: una línea de un punto no es una
+   * evolución.
+   */
   fuerza: { ejercicio: string; serie: number[]; unidad: string } | null;
   volumenSemanal: { label: string; valor: number }[];
   historial: SesionHistorial[];
-  esDemo: boolean;
 };
 
 export type EjercicioBiblioteca = {
@@ -150,7 +152,6 @@ export type RutinaBuilder = {
   dias: DiaRutina[];
   /** Otras rutinas del profesor marcadas como plantilla. */
   plantillas: { id: string; nombre: string }[];
-  esDemo: boolean;
 };
 
 /** Ítem del selector de rutinas del constructor. */
@@ -210,8 +211,7 @@ export type OpcionRutina = { id: string; nombre: string; esPlantilla: boolean };
 export type PantallaAsignaciones = {
   plantillas: PlantillaAsignable[];
   filas: FilaAsignacion[];
-  /** Alumnos y rutinas reales, incluso cuando las filas son de ejemplo. */
+  /** Opciones del formulario de alta. */
   alumnos: OpcionAlumno[];
   rutinas: OpcionRutina[];
-  esDemo: boolean;
 };

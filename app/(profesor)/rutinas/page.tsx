@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RutinaBuilder } from "@/components/coach/rutina-builder";
 import { RutinaDialog } from "@/components/coach/rutina-dialogs";
-import { BannerDemo, EmptyHint } from "@/components/coach/piezas";
+import { EmptyHint } from "@/components/coach/piezas";
 
 export default async function RutinasPage({
   searchParams,
@@ -19,13 +19,6 @@ export default async function RutinasPage({
 
   return (
     <div className="flex w-full max-w-app flex-col gap-4 p-4 lg:gap-6 lg:p-8">
-      {rutina?.esDemo ? (
-        <BannerDemo>
-          Todavía no creaste ninguna rutina. Esto es la rutina de ejemplo del UI
-          kit: se ve, no se edita.
-        </BannerDemo>
-      ) : null}
-
       {rutina ? (
         <RutinaBuilder rutina={rutina} rutinas={rutinas} ejercicios={ejercicios} />
       ) : (

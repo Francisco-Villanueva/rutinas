@@ -21,7 +21,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 
 import { prisma } from "@/lib/db";
-import type { Usuario } from "@/generated/prisma/client";
+import type { estado_sesion, Usuario } from "@/generated/prisma/client";
 
 /** Adónde mandar a cada rol después del login. */
 export const RUTA_INICIAL = {
@@ -287,6 +287,77 @@ export async function assertEjercicioEditable(
   }
 
   return { profesor, ejercicioId: ejercicio.id };
+}
+
+// ============================================================================
+// Guards de pertenencia del alumno.
+//
+// Mismo criterio que los del profesor, con una diferencia: acá el dueño del
+// dato es el usuario logueado, así que el filtro es `alumnoId: alumno.id`. Un
+// alumno que cambie el id de sesión en el payload no llega a la sesión de otro.
+// ============================================================================
+
+/** Exige que `sesionId` sea una sesión del alumno logueado. */
+export async function assertEsSesionDelAlumno(sesionId: string): Promise<{
+  alumno: Usuario;
+  sesionId: string;
+  estado: estado_sesion;
+  asignacionId: string | null;
+  rutinaDiaId: string | null;
+  /** La fecha de la sesión: los PRs se fechan con ella, no con hoy. */
+  fecha: Date;
+}> {
+  const alumno = await requireAlumno();
+
+  const sesion = await prisma.sesionEntrenamiento.findFirst({
+    where: { id: sesionId, alumnoId: alumno.id },
+    select: {
+      id: true,
+      estado: true,
+      asignacionId: true,
+      rutinaDiaId: true,
+      fecha: true,
+    },
+  });
+
+  if (!sesion) {
+    throw new ErrorDeAutorizacion(
+      `La sesión ${sesionId} no existe o no es del alumno ${alumno.id}.`,
+    );
+  }
+
+  return {
+    alumno,
+    sesionId: sesion.id,
+    estado: sesion.estado,
+    asignacionId: sesion.asignacionId,
+    rutinaDiaId: sesion.rutinaDiaId,
+    fecha: sesion.fecha,
+  };
+}
+
+/**
+ * Exige que `asignacionId` sea una asignación activa del alumno logueado.
+ * Es el permiso para empezar a entrenar contra esa rutina.
+ */
+export async function assertEsAsignacionDelAlumno(asignacionId: string): Promise<{
+  alumno: Usuario;
+  asignacionId: string;
+}> {
+  const alumno = await requireAlumno();
+
+  const asignacion = await prisma.asignacionRutina.findFirst({
+    where: { id: asignacionId, alumnoId: alumno.id, estado: "activa" },
+    select: { id: true },
+  });
+
+  if (!asignacion) {
+    throw new ErrorDeAutorizacion(
+      `La asignación ${asignacionId} no existe, no está activa o no es del alumno ${alumno.id}.`,
+    );
+  }
+
+  return { alumno, asignacionId: asignacion.id };
 }
 
 /**

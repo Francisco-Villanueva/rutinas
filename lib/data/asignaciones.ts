@@ -2,9 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { requireProfesor } from "@/lib/auth/guards";
-import { usarDemo } from "@/lib/data/alumnos";
 import { iniciales, nombreCompleto } from "@/lib/utils";
-import { ASIGNACIONES_DEMO } from "@/lib/mock/coach";
 import type { PantallaAsignaciones } from "@/lib/data/tipos";
 
 const MS_POR_SEMANA = 7 * 24 * 60 * 60 * 1000;
@@ -69,10 +67,6 @@ export async function getAsignaciones(): Promise<PantallaAsignaciones> {
     rutinas,
   };
 
-  if (usarDemo(asignaciones.length > 0 || plantillas.length > 0)) {
-    return { ...ASIGNACIONES_DEMO, ...opciones };
-  }
-
   return {
     ...opciones,
     plantillas: plantillas.map((p) => ({
@@ -103,6 +97,5 @@ export async function getAsignaciones(): Promise<PantallaAsignaciones> {
         finalizada: a.estado !== "activa",
       };
     }),
-    esDemo: false,
   };
 }

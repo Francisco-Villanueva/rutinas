@@ -30,7 +30,7 @@ function AsignacionesPlantillas({
   alumnos: OpcionAlumno[]
   rutinas: OpcionRutina[]
   alumnoPorDefecto?: string
-  /** false con el dataset de ejemplo o sin alumnos: los ids no sirven. */
+  /** false sin alumnos vinculados: no hay a quién asignarle nada. */
   asignable: boolean
 }) {
   const [sel, setSel] = React.useState(0)

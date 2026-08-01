@@ -13,7 +13,7 @@ import { SectionHead } from "@/components/coach/section-head";
 import { AsignacionesPlantillas } from "@/components/coach/asignaciones-plantillas";
 import { AsignacionDialog } from "@/components/coach/asignacion-dialog";
 import { AccionSimple } from "@/components/coach/avisos";
-import { AvatarAlumno, BannerDemo, Celda, EmptyHint } from "@/components/coach/piezas";
+import { AvatarAlumno, Celda, EmptyHint } from "@/components/coach/piezas";
 import { cn } from "@/lib/utils";
 import type { FilaAsignacion } from "@/lib/data/tipos";
 
@@ -30,7 +30,7 @@ export default async function AsignacionesPage({
     getAsignaciones(),
   ]);
 
-  const { plantillas, filas, alumnos, rutinas, esDemo } = datos;
+  const { plantillas, filas, alumnos, rutinas } = datos;
   const activas = filas.filter((f) => !f.finalizada).length;
 
   // Sin alumnos o sin rutinas no hay nada que asignar: el formulario quedaría
@@ -39,20 +39,13 @@ export default async function AsignacionesPage({
 
   return (
     <div className="flex w-full max-w-app flex-col gap-4 p-4 lg:gap-6 lg:p-8">
-      {esDemo ? (
-        <BannerDemo>
-          Todavía no hay rutinas asignadas. Esto es el dataset del UI kit: se ve,
-          no se edita.
-        </BannerDemo>
-      ) : null}
-
       <div className="grid items-start gap-5 lg:grid-cols-[300px_1fr] lg:gap-6">
         <AsignacionesPlantillas
           plantillas={plantillas}
           alumnos={alumnos}
           rutinas={rutinas}
           alumnoPorDefecto={alumnoId}
-          asignable={sePuedeAsignar && !esDemo}
+          asignable={sePuedeAsignar}
         />
 
         <section>
@@ -110,7 +103,6 @@ export default async function AsignacionesPage({
                     key={f.id}
                     fila={f}
                     ultima={i === filas.length - 1}
-                    editable={!esDemo}
                   />
                 ))}
               </>
@@ -125,11 +117,9 @@ export default async function AsignacionesPage({
 function FilaAsignacionItem({
   fila,
   ultima,
-  editable,
 }: {
   fila: FilaAsignacion;
   ultima: boolean;
-  editable: boolean;
 }) {
   const progreso =
     fila.semana != null && fila.semanas ? Math.round((fila.semana / fila.semanas) * 100) : 0;
@@ -148,7 +138,6 @@ function FilaAsignacionItem({
             size="icon-sm"
             aria-label={`Finalizar la rutina de ${fila.alumno}`}
             title="Finalizar"
-            disabled={!editable}
           >
             <CheckCircle2 aria-hidden />
           </AccionSimple>
@@ -160,7 +149,6 @@ function FilaAsignacionItem({
             size="icon-sm"
             aria-label={`Cancelar la rutina de ${fila.alumno}`}
             title="Cancelar"
-            disabled={!editable}
           >
             <XCircle aria-hidden />
           </AccionSimple>
@@ -173,7 +161,6 @@ function FilaAsignacionItem({
           size="icon-sm"
           aria-label={`Reactivar la rutina de ${fila.alumno}`}
           title="Reactivar"
-          disabled={!editable}
         >
           <RotateCcw aria-hidden />
         </AccionSimple>
@@ -186,7 +173,6 @@ function FilaAsignacionItem({
         size="icon-sm"
         aria-label={`Eliminar la asignación de ${fila.alumno}`}
         title="Eliminar"
-        disabled={!editable}
         className="text-destructive hover:bg-destructive/10 hover:text-destructive"
       >
         <Trash2 aria-hidden />

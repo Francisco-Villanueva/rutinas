@@ -71,7 +71,21 @@ export function validar<S extends z.ZodType>(
   schema: S,
   formData: FormData,
 ): { ok: true; datos: z.output<S> } | { ok: false; resultado: ResultadoAction<never> } {
-  const parseado = schema.safeParse(objetoDeFormData(formData));
+  return validarObjeto(schema, objetoDeFormData(formData));
+}
+
+/**
+ * Igual que `validar`, pero sobre un objeto ya armado.
+ *
+ * Lo necesitan los formularios con listas —la carga de un ejercicio manda N
+ * series—, porque `objetoDeFormData` aplana el FormData a un objeto plano y se
+ * queda con el último valor de cada nombre repetido.
+ */
+export function validarObjeto<S extends z.ZodType>(
+  schema: S,
+  objeto: unknown,
+): { ok: true; datos: z.output<S> } | { ok: false; resultado: ResultadoAction<never> } {
+  const parseado = schema.safeParse(objeto);
 
   if (!parseado.success) {
     const { fieldErrors, formErrors } = z.flattenError(parseado.error);

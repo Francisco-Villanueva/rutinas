@@ -20,13 +20,12 @@ import { SectionHead } from "@/components/coach/section-head";
 import {
   Adherencia,
   AvatarAlumno,
-  BannerDemo,
   EmptyHint,
 } from "@/components/coach/piezas";
 import { cn } from "@/lib/utils";
 
 export default async function DashboardPage() {
-  const { alumnos, actividad, prsSemana, esDemo } = await getPanelProfesor();
+  const { alumnos, actividad, prsSemana } = await getPanelProfesor();
 
   const activos = alumnos.filter((a) => a.estado === "activo").length;
   const conAdherencia = alumnos
@@ -39,13 +38,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex w-full max-w-app flex-col gap-5 p-4 lg:gap-6 lg:p-8">
-      {esDemo ? (
-        <BannerDemo>
-          Todavía no tenés alumnos vinculados. Esto es el dataset del UI kit para
-          poder revisar la pantalla.
-        </BannerDemo>
-      ) : null}
-
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-4">
         <Card size="sm">
@@ -76,7 +68,7 @@ export default async function DashboardPage() {
               size="sm"
               icon={<Trophy aria-hidden className="size-[15px]" />}
               label="PRs esta semana"
-              value={prsSemana ?? "—"}
+              value={prsSemana}
             />
           </CardContent>
         </Card>

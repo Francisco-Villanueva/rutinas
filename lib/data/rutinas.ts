@@ -2,8 +2,6 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { requireProfesor } from "@/lib/auth/guards";
-import { usarDemo } from "@/lib/data/alumnos";
-import { RUTINA_DEMO } from "@/lib/mock/coach";
 import type {
   EjercicioDeDia,
   PantallaRutinas,
@@ -115,9 +113,7 @@ export async function getPantallaRutinas(rutinaId?: string): Promise<PantallaRut
           rutina,
           rutinas.filter((r) => r.esPlantilla && r.id !== rutina.id),
         )
-      : // El dataset del UI kit solo aparece con la base vacía y en dev; el
-        // constructor lo muestra en modo lectura (ver rutina-builder.tsx).
-        (usarDemo(rutinas.length > 0) ? RUTINA_DEMO : null),
+      : null,
     rutinas: rutinas.map((r) => ({
       id: r.id,
       nombre: r.nombre,
@@ -200,6 +196,5 @@ function aRutinaBuilder(
       }),
     })),
     plantillas,
-    esDemo: false,
   };
 }

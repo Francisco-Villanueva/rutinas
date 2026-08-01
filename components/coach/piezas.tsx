@@ -1,7 +1,6 @@
 import * as React from "react"
 
 import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import type { EstadoAlumno } from "@/lib/data/tipos"
@@ -10,16 +9,6 @@ import type { EstadoAlumno } from "@/lib/data/tipos"
  * Piezas chicas compartidas por las pantallas del profesor. Están juntas a
  * propósito: son de dos o tres líneas y se usan cruzadas entre pantallas.
  */
-
-/** Aviso de que lo que se ve es el dataset del UI kit, no datos del gimnasio. */
-function BannerDemo({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-warning-soft px-4 py-3">
-      <Badge variant="warning">Datos de ejemplo</Badge>
-      <p className="text-sm text-warning-strong">{children}</p>
-    </div>
-  )
-}
 
 function AvatarAlumno({
   iniciales,
@@ -99,4 +88,4 @@ function Eyebrow({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn("eyebrow", className)} {...props} />
 }
 
-export { Adherencia, AvatarAlumno, BannerDemo, Celda, EmptyHint, Eyebrow, Meta }
+export { Adherencia, AvatarAlumno, Celda, EmptyHint, Eyebrow, Meta }

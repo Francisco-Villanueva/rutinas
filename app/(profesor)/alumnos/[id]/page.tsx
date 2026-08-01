@@ -24,7 +24,6 @@ import { BarChart, LineChart } from "@/components/coach/charts";
 import { SectionHead } from "@/components/coach/section-head";
 import {
   AvatarAlumno,
-  BannerDemo,
   Celda,
   EmptyHint,
   Eyebrow,
@@ -43,7 +42,7 @@ export default async function AlumnoDetallePage({
   // profesor: no distinguir los dos casos evita filtrar qué ids existen.
   if (!detalle) notFound();
 
-  const { alumno, datos, marcas, fuerza, volumenSemanal, historial, esDemo } = detalle;
+  const { alumno, datos, marcas, fuerza, volumenSemanal, historial } = detalle;
   const etiquetas = [
     alumno.objetivo,
     alumno.plan,
@@ -54,13 +53,6 @@ export default async function AlumnoDetallePage({
 
   return (
     <div className="flex w-full max-w-app flex-col gap-5 p-4 lg:gap-6 lg:p-8">
-      {esDemo ? (
-        <BannerDemo>
-          Este alumno es del dataset del UI kit. Sus marcas, gráficos e historial
-          son de ejemplo.
-        </BannerDemo>
-      ) : null}
-
       <Link
         href="/alumnos"
         className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
@@ -103,54 +95,42 @@ export default async function AlumnoDetallePage({
           </div>
         </div>
 
-        {/* Con el alumno de ejemplo no hay fila real que editar. */}
         <div className="flex flex-wrap gap-2.5">
-          {datos ? (
-            <>
-              <EditarAlumnoDialog alumno={datos}>
-                <Button variant="outline" className="flex-1 lg:flex-none">
-                  <Pencil aria-hidden />
-                  Editar
-                </Button>
-              </EditarAlumnoDialog>
-              <AccionSimple
-                action={cambiarEstadoAlumno}
-                campos={{ id: datos.id, activo: datos.activo ? "false" : "true" }}
-                confirmar={
-                  datos.activo
-                    ? `¿Dar de baja a ${alumno.nombre}? Pierde el acceso a la app hasta que lo reactives. Su historial se conserva.`
-                    : undefined
-                }
-                variant="outline"
-                className="flex-1 lg:flex-none"
-              >
-                {datos.activo ? (
-                  <>
-                    <UserMinus aria-hidden />
-                    Dar de baja
-                  </>
-                ) : (
-                  <>
-                    <UserCheck aria-hidden />
-                    Reactivar
-                  </>
-                )}
-              </AccionSimple>
-            </>
-          ) : null}
-          <Button className="flex-1 lg:flex-none" asChild={datos != null} disabled={!datos}>
-            {datos ? (
-              <Link href={`/asignaciones?alumno=${datos.id}`}>
-                <ClipboardList aria-hidden />
-                <span className="hidden sm:inline">Asignar rutina</span>
-                <span className="sm:hidden">Rutina</span>
-              </Link>
+          <EditarAlumnoDialog alumno={datos}>
+            <Button variant="outline" className="flex-1 lg:flex-none">
+              <Pencil aria-hidden />
+              Editar
+            </Button>
+          </EditarAlumnoDialog>
+          <AccionSimple
+            action={cambiarEstadoAlumno}
+            campos={{ id: datos.id, activo: datos.activo ? "false" : "true" }}
+            confirmar={
+              datos.activo
+                ? `¿Dar de baja a ${alumno.nombre}? Pierde el acceso a la app hasta que lo reactives. Su historial se conserva.`
+                : undefined
+            }
+            variant="outline"
+            className="flex-1 lg:flex-none"
+          >
+            {datos.activo ? (
+              <>
+                <UserMinus aria-hidden />
+                Dar de baja
+              </>
             ) : (
               <>
-                <ClipboardList aria-hidden />
-                Asignar rutina
+                <UserCheck aria-hidden />
+                Reactivar
               </>
             )}
+          </AccionSimple>
+          <Button className="flex-1 lg:flex-none" asChild>
+            <Link href={`/asignaciones?alumno=${datos.id}`}>
+              <ClipboardList aria-hidden />
+              <span className="hidden sm:inline">Asignar rutina</span>
+              <span className="sm:hidden">Rutina</span>
+            </Link>
           </Button>
         </div>
       </div>
@@ -189,17 +169,25 @@ export default async function AlumnoDetallePage({
                         {fuerza.unidad}
                       </span>
                     </span>
-                    <Badge variant="success" size="sm">
-                      +{fuerza.serie[fuerza.serie.length - 1] - fuerza.serie[0]} kg
-                      {" / "}
-                      {fuerza.serie.length} sem
-                    </Badge>
+                    {(() => {
+                      // Solo se muestra si hubo cambio: un "+0 kg" al lado de
+                      // una línea plana no aporta nada.
+                      const progreso =
+                        fuerza.serie[fuerza.serie.length - 1] - fuerza.serie[0];
+                      if (progreso === 0) return null;
+
+                      return (
+                        <Badge
+                          variant={progreso > 0 ? "success" : "warning"}
+                          size="sm"
+                        >
+                          {progreso > 0 ? "+" : ""}
+                          {progreso} kg / {fuerza.serie.length} sem
+                        </Badge>
+                      );
+                    })()}
                   </div>
                 </div>
-                <Badge variant="pr">
-                  <Trophy aria-hidden />
-                  Nuevo PR
-                </Badge>
               </CardContent>
               <CardContent>
                 <LineChart
