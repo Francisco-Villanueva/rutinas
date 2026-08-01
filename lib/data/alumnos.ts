@@ -111,7 +111,7 @@ export async function getAlumnoDetalle(alumnoId: string): Promise<AlumnoDetalle 
   if (alumnoId.startsWith("demo-")) {
     const alumno = ALUMNOS_DEMO.find((a) => a.id === alumnoId);
     if (!alumno || process.env.NODE_ENV === "production") return null;
-    return { alumno, ...DETALLE_DEMO, esDemo: true };
+    return { alumno, datos: null, ...DETALLE_DEMO, esDemo: true };
   }
 
   const vinculo = await prisma.profesorAlumno.findFirst({
@@ -123,6 +123,9 @@ export async function getAlumnoDetalle(alumnoId: string): Promise<AlumnoDetalle 
           nombre: true,
           apellido: true,
           activo: true,
+          email: true,
+          telefono: true,
+          fechaNacimiento: true,
           asignacionesComoAlumno: SELECT_ASIGNACION_ACTIVA,
         },
       },
@@ -131,12 +134,33 @@ export async function getAlumnoDetalle(alumnoId: string): Promise<AlumnoDetalle 
 
   if (!vinculo) return null;
 
+  const { alumno } = vinculo;
+
   return {
-    alumno: aAlumnoPanel(vinculo.alumno),
+    alumno: aAlumnoPanel(alumno),
+    datos: {
+      id: alumno.id,
+      nombre: alumno.nombre,
+      apellido: alumno.apellido,
+      email: alumno.email,
+      telefono: alumno.telefono,
+      fechaNacimiento: aFechaDeInput(alumno.fechaNacimiento),
+      activo: alumno.activo,
+    },
     marcas: [],
     fuerza: null,
     volumenSemanal: [],
     historial: [],
     esDemo: false,
   };
+}
+
+/**
+ * Date -> "YYYY-MM-DD" para el input nativo.
+ *
+ * En UTC a propósito: la columna es DATE y el driver la trae como medianoche
+ * UTC. Formatearla en hora local la correría un día hacia atrás en UTC-3.
+ */
+function aFechaDeInput(fecha: Date | null) {
+  return fecha ? fecha.toISOString().slice(0, 10) : null;
 }

@@ -7,17 +7,31 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { SectionHead } from "@/components/coach/section-head"
+import { AsignacionDialog } from "@/components/coach/asignacion-dialog"
 import { cn } from "@/lib/utils"
-import type { PlantillaAsignable } from "@/lib/data/tipos"
+import type {
+  OpcionAlumno,
+  OpcionRutina,
+  PlantillaAsignable,
+} from "@/lib/data/tipos"
 
 /**
- * Columna de plantillas. La selección es local y solo destaca la tarjeta: el
- * botón Asignar espera su Server Action.
+ * Columna de plantillas: cada una abre el formulario de asignación con esa
+ * rutina ya elegida. La selección de la tarjeta es local y solo la destaca.
  */
 function AsignacionesPlantillas({
   plantillas,
+  alumnos,
+  rutinas,
+  alumnoPorDefecto,
+  asignable,
 }: {
   plantillas: PlantillaAsignable[]
+  alumnos: OpcionAlumno[]
+  rutinas: OpcionRutina[]
+  alumnoPorDefecto?: string
+  /** false con el dataset de ejemplo o sin alumnos: los ids no sirven. */
+  asignable: boolean
 }) {
   const [sel, setSel] = React.useState(0)
 
@@ -28,7 +42,8 @@ function AsignacionesPlantillas({
       {plantillas.length === 0 ? (
         <Card>
           <CardContent className="text-sm text-muted-foreground">
-            Todavía no guardaste ninguna rutina como plantilla.
+            Todavía no guardaste ninguna rutina como plantilla. Marcá una rutina
+            como plantilla desde el constructor.
           </CardContent>
         </Card>
       ) : (
@@ -62,15 +77,25 @@ function AsignacionesPlantillas({
                 <Users aria-hidden className="size-3.5 text-faint" />
                 {t.asignadas} asignadas
               </span>
-              <Button
-                size="sm"
-                variant={i === sel ? "default" : "ghost"}
-                disabled
-                title="Próximamente"
+              <AsignacionDialog
+                alumnos={alumnos}
+                rutinas={rutinas}
+                rutinaPorDefecto={t.id}
+                alumnoPorDefecto={alumnoPorDefecto}
               >
-                <Send aria-hidden />
-                Asignar
-              </Button>
+                <Button
+                  size="sm"
+                  variant={i === sel ? "default" : "ghost"}
+                  disabled={!asignable}
+                  title={asignable ? undefined : "Necesitás al menos un alumno"}
+                  // El click no tiene que llegar a la Card, que también es
+                  // clickeable para seleccionarla.
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Send aria-hidden />
+                  Asignar
+                </Button>
+              </AsignacionDialog>
             </CardContent>
           </Card>
         ))

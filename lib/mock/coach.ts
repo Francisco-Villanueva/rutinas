@@ -1,6 +1,7 @@
 import type {
   AlumnoDetalle,
   AlumnoPanel,
+  EjercicioDeDia,
   EventoActividad,
   PantallaAsignaciones,
   RutinaBuilder,
@@ -146,7 +147,9 @@ export const ACTIVIDAD_DEMO: EventoActividad[] = [
 
 export const PRS_SEMANA_DEMO = 4;
 
-export const DETALLE_DEMO: Omit<AlumnoDetalle, "alumno" | "esDemo"> = {
+// `datos` queda afuera: son los campos editables de la fila real, y el alumno de
+// ejemplo no tiene fila. La pantalla de detalle esconde la edición si es null.
+export const DETALLE_DEMO: Omit<AlumnoDetalle, "alumno" | "esDemo" | "datos"> = {
   marcas: [
     { label: "1RM Sentadilla", value: "128", unit: "kg", delta: "+6 kg" },
     { label: "1RM Press banca", value: "84", unit: "kg", delta: "+2 kg" },
@@ -202,50 +205,92 @@ export const DETALLE_DEMO: Omit<AlumnoDetalle, "alumno" | "esDemo"> = {
   ],
 };
 
+/**
+ * Fila del constructor a partir de los valores crudos. El constructor muestra
+ * los dos: los crudos precargan el formulario de edición y los formateados van
+ * en la tabla. En el dataset de ejemplo la edición está deshabilitada, pero el
+ * tipo es el mismo que el de la query real.
+ */
+function ejercicioDemo(
+  id: string,
+  nombre: string,
+  series: number,
+  repeticiones: number,
+  peso: number | null,
+  descansoSegundos: number,
+): EjercicioDeDia {
+  return {
+    id,
+    ejercicioId: `${id}-ejercicio`,
+    nombre,
+    series,
+    repeticionesMin: repeticiones,
+    repeticionesMax: repeticiones,
+    pesoSugerido: peso,
+    descansoSegundos,
+    notas: null,
+    reps: String(repeticiones),
+    peso: peso == null ? "—" : `${peso} kg`,
+    descanso: `${Math.floor(descansoSegundos / 60)}:${String(descansoSegundos % 60).padStart(2, "0")}`,
+    rpe: "—",
+  };
+}
+
 export const RUTINA_DEMO: RutinaBuilder = {
   id: "demo-rutina",
   nombre: "Fuerza 4 días — Mesociclo 2",
   objetivo: "Fuerza",
+  descripcion: null,
   semanas: 8,
+  diasPorSemana: 4,
+  esPlantilla: false,
   dias: [
     {
       id: "demo-d1",
+      numeroDia: 1,
       dia: "Lun",
       foco: "Empuje",
+      notas: null,
       ejercicios: [
-        { id: "demo-e1", nombre: "Press banca", series: 4, reps: "6", peso: "80 kg", descanso: "2:30", rpe: "8" },
-        { id: "demo-e2", nombre: "Press militar", series: 3, reps: "8", peso: "45 kg", descanso: "2:00", rpe: "8" },
-        { id: "demo-e3", nombre: "Fondos lastrados", series: 3, reps: "10", peso: "15 kg", descanso: "1:30", rpe: "9" },
-        { id: "demo-e4", nombre: "Extensión tríceps", series: 3, reps: "12", peso: "25 kg", descanso: "1:00", rpe: "9" },
+        ejercicioDemo("demo-e1", "Press banca", 4, 6, 80, 150),
+        ejercicioDemo("demo-e2", "Press militar", 3, 8, 45, 120),
+        ejercicioDemo("demo-e3", "Fondos lastrados", 3, 10, 15, 90),
+        ejercicioDemo("demo-e4", "Extensión tríceps", 3, 12, 25, 60),
       ],
     },
     {
       id: "demo-d2",
+      numeroDia: 2,
       dia: "Mié",
       foco: "Tirón",
+      notas: null,
       ejercicios: [
-        { id: "demo-e5", nombre: "Peso muerto", series: 4, reps: "5", peso: "120 kg", descanso: "3:00", rpe: "8" },
-        { id: "demo-e6", nombre: "Dominadas", series: 4, reps: "8", peso: "—", descanso: "2:00", rpe: "8" },
-        { id: "demo-e7", nombre: "Remo con barra", series: 3, reps: "10", peso: "60 kg", descanso: "1:30", rpe: "8" },
+        ejercicioDemo("demo-e5", "Peso muerto", 4, 5, 120, 180),
+        ejercicioDemo("demo-e6", "Dominadas", 4, 8, null, 120),
+        ejercicioDemo("demo-e7", "Remo con barra", 3, 10, 60, 90),
       ],
     },
     {
       id: "demo-d3",
+      numeroDia: 3,
       dia: "Vie",
       foco: "Pierna",
+      notas: null,
       ejercicios: [
-        { id: "demo-e8", nombre: "Sentadilla", series: 5, reps: "5", peso: "100 kg", descanso: "3:00", rpe: "8" },
-        { id: "demo-e9", nombre: "Prensa", series: 3, reps: "12", peso: "180 kg", descanso: "2:00", rpe: "8" },
-        { id: "demo-e10", nombre: "Curl femoral", series: 3, reps: "12", peso: "40 kg", descanso: "1:00", rpe: "9" },
+        ejercicioDemo("demo-e8", "Sentadilla", 5, 5, 100, 180),
+        ejercicioDemo("demo-e9", "Prensa", 3, 12, 180, 120),
+        ejercicioDemo("demo-e10", "Curl femoral", 3, 12, 40, 60),
       ],
     },
     {
       id: "demo-d4",
+      numeroDia: 4,
       dia: "Sáb",
       foco: "Full",
+      notas: null,
       ejercicios: [
-        { id: "demo-e11", nombre: "Hip thrust", series: 4, reps: "8", peso: "90 kg", descanso: "2:00", rpe: "8" },
-        { id: "demo-e12", nombre: "Press inclinado", series: 3, reps: "10", peso: "55 kg", descanso: "1:30", rpe: "8" },
+        ejercicioDemo("demo-e11", "Hip thrust", 4, 8, 90, 120),
+        ejercicioDemo("demo-e12", "Press inclinado", 3, 10, 55, 90),
       ],
     },
   ],
@@ -259,7 +304,12 @@ export const RUTINA_DEMO: RutinaBuilder = {
   esDemo: true,
 };
 
-export const ASIGNACIONES_DEMO: PantallaAsignaciones = {
+// `alumnos` y `rutinas` los completa la query con los reales: son las opciones
+// del formulario de alta, y ahí no puede haber nada inventado.
+export const ASIGNACIONES_DEMO: Omit<
+  PantallaAsignaciones,
+  "alumnos" | "rutinas"
+> = {
   plantillas: [
     { id: "demo-p1", nombre: "Fuerza 4 días", objetivo: "Fuerza", dias: 4, semanas: 8, asignadas: 5 },
     { id: "demo-p2", nombre: "Hipertrofia PPL", objetivo: "Hipertrofia", dias: 6, semanas: 6, asignadas: 3 },
@@ -267,12 +317,12 @@ export const ASIGNACIONES_DEMO: PantallaAsignaciones = {
     { id: "demo-p4", nombre: "Powerlifting peaking", objetivo: "Fuerza", dias: 4, semanas: 4, asignadas: 1 },
   ],
   filas: [
-    { id: "demo-a1", alumno: "Lucía Fernández", iniciales: "LF", estadoAlumno: "activo", rutina: "Fuerza 4 días", desde: "12 jul", semana: 3, semanas: 8, finalizada: false },
-    { id: "demo-a2", alumno: "Marco Díaz", iniciales: "MD", estadoAlumno: "activo", rutina: "Volumen alto", desde: "28 jun", semana: 5, semanas: 6, finalizada: false },
-    { id: "demo-a3", alumno: "Ana Ruiz", iniciales: "AR", estadoAlumno: "ausente", rutina: "Full body 3 días", desde: "05 jul", semana: 2, semanas: 8, finalizada: false },
-    { id: "demo-a4", alumno: "Julián Costa", iniciales: "JC", estadoAlumno: "activo", rutina: "Powerlifting", desde: "01 jun", semana: 7, semanas: 8, finalizada: false },
-    { id: "demo-a5", alumno: "Sofía Molina", iniciales: "SM", estadoAlumno: "activo", rutina: "Push/Pull/Legs", desde: "18 jun", semana: 4, semanas: 6, finalizada: false },
-    { id: "demo-a6", alumno: "Tomás Vega", iniciales: "TV", estadoAlumno: "ausente", rutina: "Metcon 5 días", desde: "10 jun", semana: 6, semanas: 6, finalizada: true },
+    { id: "demo-a1", alumnoId: "demo-1", alumno: "Lucía Fernández", iniciales: "LF", estadoAlumno: "activo", rutinaId: "demo-p1", rutina: "Fuerza 4 días", desde: "12 jul", semana: 3, semanas: 8, estado: "activa", finalizada: false },
+    { id: "demo-a2", alumnoId: "demo-2", alumno: "Marco Díaz", iniciales: "MD", estadoAlumno: "activo", rutinaId: "demo-p2", rutina: "Volumen alto", desde: "28 jun", semana: 5, semanas: 6, estado: "activa", finalizada: false },
+    { id: "demo-a3", alumnoId: "demo-3", alumno: "Ana Ruiz", iniciales: "AR", estadoAlumno: "ausente", rutinaId: "demo-p3", rutina: "Full body 3 días", desde: "05 jul", semana: 2, semanas: 8, estado: "activa", finalizada: false },
+    { id: "demo-a4", alumnoId: "demo-4", alumno: "Julián Costa", iniciales: "JC", estadoAlumno: "activo", rutinaId: "demo-p4", rutina: "Powerlifting", desde: "01 jun", semana: 7, semanas: 8, estado: "activa", finalizada: false },
+    { id: "demo-a5", alumnoId: "demo-5", alumno: "Sofía Molina", iniciales: "SM", estadoAlumno: "activo", rutinaId: "demo-p2", rutina: "Push/Pull/Legs", desde: "18 jun", semana: 4, semanas: 6, estado: "activa", finalizada: false },
+    { id: "demo-a6", alumnoId: "demo-6", alumno: "Tomás Vega", iniciales: "TV", estadoAlumno: "ausente", rutinaId: "demo-p1", rutina: "Metcon 5 días", desde: "10 jun", semana: 6, semanas: 6, estado: "completada", finalizada: true },
   ],
   esDemo: true,
 };

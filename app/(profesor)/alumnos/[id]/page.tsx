@@ -5,11 +5,16 @@ import {
   ClipboardList,
   Flame,
   History,
-  MessageSquare,
+  Pencil,
   Trophy,
+  UserCheck,
+  UserMinus,
 } from "lucide-react";
 
 import { getAlumnoDetalle } from "@/lib/data/alumnos";
+import { cambiarEstadoAlumno } from "@/lib/actions/alumnos";
+import { AccionSimple } from "@/components/coach/avisos";
+import { EditarAlumnoDialog } from "@/components/coach/alumno-dialogs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,7 +43,7 @@ export default async function AlumnoDetallePage({
   // profesor: no distinguir los dos casos evita filtrar qué ids existen.
   if (!detalle) notFound();
 
-  const { alumno, marcas, fuerza, volumenSemanal, historial, esDemo } = detalle;
+  const { alumno, datos, marcas, fuerza, volumenSemanal, historial, esDemo } = detalle;
   const etiquetas = [
     alumno.objetivo,
     alumno.plan,
@@ -98,16 +103,54 @@ export default async function AlumnoDetallePage({
           </div>
         </div>
 
-        {/* Ambas acciones esperan su Server Action. */}
-        <div className="flex gap-2.5">
-          <Button variant="outline" className="flex-1 lg:flex-none" disabled>
-            <MessageSquare aria-hidden />
-            Mensaje
-          </Button>
-          <Button className="flex-1 lg:flex-none" disabled>
-            <ClipboardList aria-hidden />
-            <span className="hidden sm:inline">Asignar rutina</span>
-            <span className="sm:hidden">Rutina</span>
+        {/* Con el alumno de ejemplo no hay fila real que editar. */}
+        <div className="flex flex-wrap gap-2.5">
+          {datos ? (
+            <>
+              <EditarAlumnoDialog alumno={datos}>
+                <Button variant="outline" className="flex-1 lg:flex-none">
+                  <Pencil aria-hidden />
+                  Editar
+                </Button>
+              </EditarAlumnoDialog>
+              <AccionSimple
+                action={cambiarEstadoAlumno}
+                campos={{ id: datos.id, activo: datos.activo ? "false" : "true" }}
+                confirmar={
+                  datos.activo
+                    ? `¿Dar de baja a ${alumno.nombre}? Pierde el acceso a la app hasta que lo reactives. Su historial se conserva.`
+                    : undefined
+                }
+                variant="outline"
+                className="flex-1 lg:flex-none"
+              >
+                {datos.activo ? (
+                  <>
+                    <UserMinus aria-hidden />
+                    Dar de baja
+                  </>
+                ) : (
+                  <>
+                    <UserCheck aria-hidden />
+                    Reactivar
+                  </>
+                )}
+              </AccionSimple>
+            </>
+          ) : null}
+          <Button className="flex-1 lg:flex-none" asChild={datos != null} disabled={!datos}>
+            {datos ? (
+              <Link href={`/asignaciones?alumno=${datos.id}`}>
+                <ClipboardList aria-hidden />
+                <span className="hidden sm:inline">Asignar rutina</span>
+                <span className="sm:hidden">Rutina</span>
+              </Link>
+            ) : (
+              <>
+                <ClipboardList aria-hidden />
+                Asignar rutina
+              </>
+            )}
           </Button>
         </div>
       </div>

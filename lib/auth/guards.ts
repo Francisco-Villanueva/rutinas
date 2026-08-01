@@ -156,3 +156,154 @@ export async function assertEsPropioAlumno(alumnoId: string): Promise<Usuario> {
 
   return alumno;
 }
+
+// ============================================================================
+// Guards de pertenencia para las mutaciones del profesor.
+//
+// Todos siguen la misma forma: el cliente manda un id, y acá se vuelve a leer
+// la fila filtrando por el profesor logueado. Nunca se confía en que el id que
+// llegó sea de quien lo mandó — validar el *formato* del id (zod) no dice nada
+// sobre de quién es la fila.
+//
+// Devuelven el profesor más lo mínimo que la action necesita del recurso, para
+// no repetir la query.
+// ============================================================================
+
+/** Exige que `rutinaId` sea una rutina activa del profesor logueado. */
+export async function assertEsProfesorDeRutina(
+  rutinaId: string,
+): Promise<{ profesor: Usuario; rutinaId: string }> {
+  const profesor = await requireProfesor();
+
+  const rutina = await prisma.rutina.findFirst({
+    where: { id: rutinaId, profesorId: profesor.id, activo: true },
+    select: { id: true },
+  });
+
+  if (!rutina) {
+    throw new ErrorDeAutorizacion(
+      `La rutina ${rutinaId} no existe o no es del profesor ${profesor.id}.`,
+    );
+  }
+
+  return { profesor, rutinaId: rutina.id };
+}
+
+/** Exige que `diaId` pertenezca a una rutina activa del profesor logueado. */
+export async function assertEsProfesorDeDia(
+  diaId: string,
+): Promise<{ profesor: Usuario; diaId: string; rutinaId: string }> {
+  const profesor = await requireProfesor();
+
+  const dia = await prisma.rutinaDia.findFirst({
+    where: { id: diaId, rutina: { profesorId: profesor.id, activo: true } },
+    select: { id: true, rutinaId: true },
+  });
+
+  if (!dia) {
+    throw new ErrorDeAutorizacion(
+      `El día ${diaId} no existe o no es de una rutina del profesor ${profesor.id}.`,
+    );
+  }
+
+  return { profesor, diaId: dia.id, rutinaId: dia.rutinaId };
+}
+
+/** Exige que `rutinaEjercicioId` cuelgue de una rutina activa del profesor. */
+export async function assertEsProfesorDeRutinaEjercicio(
+  rutinaEjercicioId: string,
+): Promise<{
+  profesor: Usuario;
+  rutinaEjercicioId: string;
+  rutinaDiaId: string;
+  orden: number;
+}> {
+  const profesor = await requireProfesor();
+
+  const fila = await prisma.rutinaEjercicio.findFirst({
+    where: {
+      id: rutinaEjercicioId,
+      rutinaDia: { rutina: { profesorId: profesor.id, activo: true } },
+    },
+    select: { id: true, rutinaDiaId: true, orden: true },
+  });
+
+  if (!fila) {
+    throw new ErrorDeAutorizacion(
+      `El ejercicio de rutina ${rutinaEjercicioId} no es del profesor ${profesor.id}.`,
+    );
+  }
+
+  return {
+    profesor,
+    rutinaEjercicioId: fila.id,
+    rutinaDiaId: fila.rutinaDiaId,
+    orden: fila.orden,
+  };
+}
+
+/** Exige que `asignacionId` haya sido creada por el profesor logueado. */
+export async function assertEsProfesorDeAsignacion(
+  asignacionId: string,
+): Promise<{ profesor: Usuario; asignacionId: string; alumnoId: string }> {
+  const profesor = await requireProfesor();
+
+  const asignacion = await prisma.asignacionRutina.findFirst({
+    where: { id: asignacionId, profesorId: profesor.id },
+    select: { id: true, alumnoId: true },
+  });
+
+  if (!asignacion) {
+    throw new ErrorDeAutorizacion(
+      `La asignación ${asignacionId} no existe o no es del profesor ${profesor.id}.`,
+    );
+  }
+
+  return { profesor, asignacionId: asignacion.id, alumnoId: asignacion.alumnoId };
+}
+
+/**
+ * Exige que el profesor pueda *editar* `ejercicioId`.
+ *
+ * Los ejercicios del seed son `es_publico = true` y no cuelgan de ningún
+ * gimnasio: se ven desde toda la app pero no los edita nadie desde la UI, o el
+ * primer profesor que renombre "Press banca" se lo cambia a todos los demás.
+ * Editable = del gimnasio del profesor.
+ */
+export async function assertEjercicioEditable(
+  ejercicioId: string,
+): Promise<{ profesor: Usuario; ejercicioId: string }> {
+  const profesor = await requireProfesor();
+
+  const ejercicio = await prisma.ejercicio.findFirst({
+    where: { id: ejercicioId, gimnasioId: profesor.gimnasioId, esPublico: false },
+    select: { id: true },
+  });
+
+  if (!ejercicio) {
+    throw new ErrorDeAutorizacion(
+      `El ejercicio ${ejercicioId} no existe o no es editable por el profesor ${profesor.id}.`,
+    );
+  }
+
+  return { profesor, ejercicioId: ejercicio.id };
+}
+
+/**
+ * Exige que el profesor tenga gimnasio asignado. Todo lo que crea (ejercicios,
+ * alumnos) cuelga del gimnasio, y `usuarios.gimnasio_id` es nullable: sin esto,
+ * un profesor sin gimnasio crearía filas huérfanas que después no ve nadie.
+ */
+export async function requireProfesorConGimnasio(): Promise<
+  Usuario & { gimnasioId: string }
+> {
+  const profesor = await requireProfesor();
+
+  if (!profesor.gimnasioId) {
+    throw new ErrorDeAutorizacion(
+      `El profesor ${profesor.id} no tiene gimnasio asignado.`,
+    );
+  }
+
+  return profesor as Usuario & { gimnasioId: string };
+}

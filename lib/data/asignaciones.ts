@@ -18,7 +18,7 @@ const FORMATO_FECHA = new Intl.DateTimeFormat("es-AR", {
 export async function getAsignaciones(): Promise<PantallaAsignaciones> {
   const profesor = await requireProfesor();
 
-  const [plantillas, asignaciones] = await Promise.all([
+  const [plantillas, asignaciones, alumnos, rutinas] = await Promise.all([
     prisma.rutina.findMany({
       where: { profesorId: profesor.id, activo: true, esPlantilla: true },
       orderBy: { nombre: "asc" },
@@ -38,17 +38,43 @@ export async function getAsignaciones(): Promise<PantallaAsignaciones> {
         id: true,
         fechaInicio: true,
         estado: true,
+        alumnoId: true,
+        rutinaId: true,
         alumno: { select: { nombre: true, apellido: true, activo: true } },
         rutina: { select: { nombre: true, duracionSemanas: true } },
       },
     }),
+    // Los alumnos vinculados y las rutinas del profesor alimentan el formulario
+    // de alta. Se piden siempre: aunque las filas de abajo sean de ejemplo, el
+    // profesor puede tener alumnos y rutinas reales para asignar.
+    prisma.profesorAlumno.findMany({
+      where: { profesorId: profesor.id, activo: true },
+      orderBy: { alumno: { nombre: "asc" } },
+      select: {
+        alumno: { select: { id: true, nombre: true, apellido: true } },
+      },
+    }),
+    prisma.rutina.findMany({
+      where: { profesorId: profesor.id, activo: true },
+      orderBy: [{ esPlantilla: "desc" }, { nombre: "asc" }],
+      select: { id: true, nombre: true, esPlantilla: true },
+    }),
   ]);
 
+  const opciones = {
+    alumnos: alumnos.map((v) => ({
+      id: v.alumno.id,
+      nombre: nombreCompleto(v.alumno.nombre, v.alumno.apellido),
+    })),
+    rutinas,
+  };
+
   if (usarDemo(asignaciones.length > 0 || plantillas.length > 0)) {
-    return ASIGNACIONES_DEMO;
+    return { ...ASIGNACIONES_DEMO, ...opciones };
   }
 
   return {
+    ...opciones,
     plantillas: plantillas.map((p) => ({
       id: p.id,
       nombre: p.nombre,
@@ -64,13 +90,16 @@ export async function getAsignaciones(): Promise<PantallaAsignaciones> {
 
       return {
         id: a.id,
+        alumnoId: a.alumnoId,
         alumno: nombreCompleto(a.alumno.nombre, a.alumno.apellido),
         iniciales: iniciales(a.alumno.nombre, a.alumno.apellido),
         estadoAlumno: a.alumno.activo ? ("activo" as const) : ("ausente" as const),
+        rutinaId: a.rutinaId,
         rutina: a.rutina.nombre,
         desde: FORMATO_FECHA.format(a.fechaInicio),
         semana: semanas ? Math.min(Math.max(1, transcurridas), semanas) : null,
         semanas,
+        estado: a.estado,
         finalizada: a.estado !== "activa",
       };
     }),

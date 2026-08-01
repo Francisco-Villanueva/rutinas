@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { AvatarAlumno, EmptyHint, Meta } from "@/components/coach/piezas"
+import { InvitarAlumnoDialog } from "@/components/coach/alumno-dialogs"
 import { cn } from "@/lib/utils"
 import type { AlumnoPanel } from "@/lib/data/tipos"
 
@@ -71,11 +72,12 @@ function AlumnosLista({ alumnos }: { alumnos: AlumnoPanel[] }) {
               className="pl-10"
             />
           </div>
-          {/* La invitación necesita su Server Action; todavía no existe. */}
-          <Button disabled title="Próximamente: invitación por email">
-            <UserPlus aria-hidden />
-            <span className="hidden lg:inline">Invitar alumno</span>
-          </Button>
+          <InvitarAlumnoDialog>
+            <Button>
+              <UserPlus aria-hidden />
+              <span className="hidden lg:inline">Invitar alumno</span>
+            </Button>
+          </InvitarAlumnoDialog>
         </div>
       </div>
 

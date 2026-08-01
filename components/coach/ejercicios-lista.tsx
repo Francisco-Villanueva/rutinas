@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Dumbbell, Play, Plus, Search, SearchX } from "lucide-react"
+import { Dumbbell, Pencil, Play, Plus, Search, SearchX } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tag } from "@/components/tag"
 import { EmptyHint } from "@/components/coach/piezas"
+import { EjercicioDialog } from "@/components/coach/ejercicio-dialog"
 import type { EjercicioBiblioteca } from "@/lib/data/tipos"
 
 const TODOS = "Todos"
@@ -44,6 +45,16 @@ function EjerciciosLista({
       e.nombre.toLowerCase().includes(q.trim().toLowerCase())
   )
 
+  // Sugerencias del form de alta: se arman con lo que ya hay cargado, para que
+  // el profesor no invente "Mancuerna" al lado de "Mancuernas".
+  const equipamientos = React.useMemo(
+    () =>
+      [...new Set(ejercicios.map((e) => e.equipamiento).filter((v) => v != null))].sort(
+        (a, b) => a.localeCompare(b, "es")
+      ),
+    [ejercicios]
+  )
+
   return (
     <div className="flex flex-col gap-3.5 lg:gap-6">
       <div className="flex items-center gap-3">
@@ -60,12 +71,13 @@ function EjerciciosLista({
             className="pl-10"
           />
         </div>
-        {/* Alta de ejercicio: pendiente de su Server Action. */}
-        <Button disabled title="Próximamente: alta de ejercicio">
-          <Plus aria-hidden />
-          <span className="hidden sm:inline">Nuevo ejercicio</span>
-          <span className="sm:hidden">Nuevo</span>
-        </Button>
+        <EjercicioDialog grupos={grupos} equipamientos={equipamientos}>
+          <Button>
+            <Plus aria-hidden />
+            <span className="hidden sm:inline">Nuevo ejercicio</span>
+            <span className="sm:hidden">Nuevo</span>
+          </Button>
+        </EjercicioDialog>
       </div>
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 lg:mx-0 lg:flex-wrap lg:px-0">
@@ -129,9 +141,28 @@ function EjerciciosLista({
                     <Badge size="sm">{e.grupo}</Badge>
                     {e.equipamiento ? <Badge size="sm">{e.equipamiento}</Badge> : null}
                   </div>
-                  <span className="shrink-0 font-mono text-2xs whitespace-nowrap text-faint">
-                    {e.usos} rut.
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="font-mono text-2xs whitespace-nowrap text-faint">
+                      {e.usos} rut.
+                    </span>
+                    {/* Los del catálogo público no se editan: son de todos los
+                        gimnasios. Ver assertEjercicioEditable. */}
+                    {e.editable ? (
+                      <EjercicioDialog
+                        ejercicio={e}
+                        grupos={grupos}
+                        equipamientos={equipamientos}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Editar ${e.nombre}`}
+                        >
+                          <Pencil aria-hidden />
+                        </Button>
+                      </EjercicioDialog>
+                    ) : null}
+                  </div>
                 </div>
               </CardContent>
             </Card>

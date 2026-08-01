@@ -26,6 +26,9 @@ export async function getEjercicios(): Promise<{
       grupoMuscular: true,
       grupoMuscularSecundario: true,
       equipamiento: true,
+      descripcion: true,
+      gimnasioId: true,
+      esPublico: true,
       _count: { select: { rutinaEjercicios: true, media: true } },
     },
   });
@@ -36,8 +39,12 @@ export async function getEjercicios(): Promise<{
     grupo: e.grupoMuscular,
     equipamiento: e.equipamiento,
     patron: e.grupoMuscularSecundario,
+    descripcion: e.descripcion,
     usos: e._count.rutinaEjercicios,
     tieneVideo: e._count.media > 0,
+    // Mismo criterio que assertEjercicioEditable: si esto y el guard se separan,
+    // la UI ofrece editar algo que la action después rechaza.
+    editable: !e.esPublico && e.gimnasioId === profesor.gimnasioId,
   }));
 
   const grupos = [...new Set(ejercicios.map((e) => e.grupo))].sort((a, b) =>
