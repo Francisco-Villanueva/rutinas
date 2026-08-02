@@ -60,7 +60,7 @@ como config propia y al script le llegan solo los valores sueltos.
 | `npm run lint`        | ESLint.                                         |
 | `npm run db:pull`     | Trae el schema desde la base a `prisma/schema.prisma`. |
 | `npm run db:generate` | Regenera el cliente de Prisma.                  |
-| `npm run db:seed`     | Gimnasio hardcodeado + 66 ejercicios.           |
+| `npm run db:seed`     | Gimnasio hardcodeado + 60 ejercicios. Idempotente. |
 
 ## Deploy en Vercel
 
@@ -77,8 +77,16 @@ De cada branch salen dos connection strings, y no son intercambiables:
 Prisma en serverless abre una conexión por invocación: sin el pooler, Neon corta
 por límite de conexiones. Anda en local y se rompe en Vercel.
 
-Antes del primer deploy, corré el DDL del modelo y el seed contra el branch de
-producción.
+Antes del primer deploy, corré contra el branch de producción:
+
+1. El DDL de `../modelo_datos_gimnasio.sql`, **solo hasta las 14 tablas del MVP**
+   (lo que sigue —`comentarios`, `mensajes`, `notificaciones`— es fase 2). Ese
+   mismo archivo carga el catálogo de `tipos_metrica`.
+2. `npm run db:seed`, para el gimnasio y los ejercicios.
+
+El DDL no es idempotente: sus `CREATE TABLE` no llevan `IF NOT EXISTS`, así que
+correrlo dos veces falla con "already exists" sin tocar los datos. El seed sí es
+idempotente y se puede repetir.
 
 ### 2. Clerk
 
@@ -116,8 +124,8 @@ hay service worker ni modo offline.
 
 ## Lo que todavía no está
 
-- Métricas corporales: la tabla `tipos_metrica` existe pero no está sembrada y no
-  hay pantalla de carga.
+- Métricas corporales: el catálogo `tipos_metrica` viene cargado por el DDL
+  (peso, % de grasa y siete medidas), pero no hay CRUD ni pantalla de carga.
 - Fotos de progreso: la tabla está creada, sin UI (necesita Vercel Blob).
 - Videos de ejercicios: `ejercicio_media` existe, sin UI.
 - Multi-gimnasio: el gimnasio está hardcodeado en el seed.
